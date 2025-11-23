@@ -5,54 +5,101 @@ from tensorflow.keras.preprocessing import image
 import os
 import io
 from PIL import Image
-import urllib.request
-import requests  # NEW – for safer HTTP download
+import requests  # make sure 'requests' is in requirements.txt
 
 app = Flask(__name__)
 
-# ===== Model load (lazy, with download support) =====
+# ===== Model load (lazy, Google Drive-aware) =====
 MODEL_PATH = os.path.join(os.path.dirname(__file__), "Final_Model.h5")
-MODEL_URL = "https://drive.google.com/uc?export=download&id=1rdGwASKMfK0YkvTzhjChbeOzk5dqD-VL"
+MODEL_URL = "https://drive.google.com/file/d/1rdGwASKMfK0YkvTzhjChbeOzk5dqD-VL/view?usp=sharing" # you already set this on Render
 model = None  # will be loaded on first use
 
 
+def extract_file_id(url: str) -> str:
+    """
+    Extract Google Drive file ID from various URL formats.
+    - https://drive.google.com/file/d/<ID>/view?usp=sharing
+    - https://drive.google.com/uc?export=download&id=<ID>
+    """
+    if "id=" in url:
+        # ?id=<ID>
+        from urllib.parse import urlparse, parse_qs
+        parsed = urlparse(url)
+        qs = parse_qs(parsed.query)
+        if "id" in qs:
+            return qs["id"][0]
+
+    if "/d/" in url:
+        # /d/<ID>/
+        return url.split("/d/")[1].split("/")[0]
+
+    # If it's already just an ID, return as is
+    return url
+
+
+def get_confirm_token(response):
+    """Get confirmation token for large Google Drive files."""
+    for key, value in response.cookies.items():
+        if key.startswith("download_warning"):
+            return value
+    return None
+
+
+def save_response_content(response, destination, chunk_size=32768):
+    """Stream response content to a file."""
+    with open(destination, "wb") as f:
+        for chunk in response.iter_content(chunk_size):
+            if chunk:
+                f.write(chunk)
+
+
+def download_model_from_google_drive(url: str, destination: str):
+    """Download large file from Google Drive handling confirm token."""
+    if not url:
+        raise RuntimeError("MODEL_URL is not set")
+
+    file_id = extract_file_id(url)
+    print("Using Google Drive file ID:", file_id, flush=True)
+
+    URL = "https://docs.google.com/uc?export=download"
+    session = requests.Session()
+
+    response = session.get(URL, params={"id": file_id}, stream=True)
+    token = get_confirm_token(response)
+
+    if token:
+        print("Found confirm token, downloading with confirmation...", flush=True)
+        params = {"id": file_id, "confirm": token}
+        response = session.get(URL, params=params, stream=True)
+
+    response.raise_for_status()
+    save_response_content(response, destination)
+
+    size_mb = os.path.getsize(destination) / (1024 * 1024)
+    print(f"Model downloaded to {destination} ({size_mb:.2f} MB)", flush=True)
+
+
 def download_model():
-    """Download the model file from MODEL_URL if it does not exist."""
+    """Download the model file from Google Drive if it does not exist."""
     if os.path.exists(MODEL_PATH):
-        # Already downloaded
-        print("Model file already exists at:", MODEL_PATH)
+        size_mb = os.path.getsize(MODEL_PATH) / (1024 * 1024)
+        print(f"Model file already exists at: {MODEL_PATH} ({size_mb:.2f} MB)", flush=True)
         return
 
-    if not MODEL_URL:
-        raise RuntimeError(
-            "MODEL_URL environment variable is not set and model file is missing."
-        )
-
-    print("Downloading model from:", MODEL_URL, flush=True)
-
-    # Use requests for streaming download from Google Drive
-    with requests.get(MODEL_URL, stream=True) as r:
-        r.raise_for_status()
-        with open(MODEL_PATH, "wb") as f:
-            for chunk in r.iter_content(chunk_size=8192):
-                if chunk:
-                    f.write(chunk)
-
-    size_mb = os.path.getsize(MODEL_PATH) / (1024 * 1024)
-    print(f"Model downloaded to {MODEL_PATH} ({size_mb:.2f} MB)", flush=True)
+    print("Downloading model from Google Drive...", flush=True)
+    download_model_from_google_drive(MODEL_URL, MODEL_PATH)
 
 
 def get_model():
     """
     Lazily download and load the model.
-    - If Final_Model.h5 is not present, download it from MODEL_URL.
+    - If Final_Model.h5 is not present, download it from Google Drive.
     - Then load it once and reuse.
     """
     global model
 
     if model is None:
         download_model()
-
         print("Loading model from:", MODEL_PATH, flush=True)
         model = tf.keras.models.load_model(MODEL_PATH)
         print("Model loaded.", flush=True)
