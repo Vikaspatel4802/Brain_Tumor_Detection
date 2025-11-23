@@ -11,7 +11,7 @@ app = Flask(__name__)
 
 # ===== Model load (lazy, with download support) =====
 MODEL_PATH = os.path.join(os.path.dirname(__file__), "Final_Model.h5")
-MODEL_URL = os.environ.get("MODEL_URL")  # set this in Render dashboard
+MODEL_URL = "https://drive.google.com/uc?export=download&id=1rdGwASKMfK0YkvTzhjChbeOzk5dqD-VL"
 model = None  # will be loaded on first use
 
 
