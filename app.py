@@ -5,14 +5,42 @@ from tensorflow.keras.preprocessing import image
 import os
 import io
 from PIL import Image
-# import webbrowser
-# webbrowser.open("http://127.0.0.1:5000")
+import urllib.request  # NEW: for downloading model from Drive
 
 app = Flask(__name__)
 
-# ===== Model load =====
+# ===== Model load (lazy, with download support) =====
 MODEL_PATH = os.path.join(os.path.dirname(__file__), "Final_Model.h5")
-model = tf.keras.models.load_model(MODEL_PATH)
+MODEL_URL = os.environ.get("MODEL_URL")  # set this in Render dashboard
+model = None  # will be loaded on first use
+
+
+def get_model():
+    """
+    Lazily download and load the model.
+    - If Final_Model.h5 is not present, download it from MODEL_URL.
+    - Then load it once and reuse.
+    """
+    global model
+
+    if model is None:
+        # Download if file is missing
+        if not os.path.exists(MODEL_PATH):
+            if not MODEL_URL:
+                raise RuntimeError(
+                    "MODEL_URL environment variable is not set and model file is missing."
+                )
+
+            print("Downloading model from:", MODEL_URL)
+            urllib.request.urlretrieve(MODEL_URL, MODEL_PATH)
+            print("Model downloaded to:", MODEL_PATH)
+
+        print("Loading model from:", MODEL_PATH)
+        model = tf.keras.models.load_model(MODEL_PATH)
+        print("Model loaded.")
+
+    return model
+
 
 # Image size used during training
 IMG_SIZE = 128
@@ -45,7 +73,9 @@ def predict():
     print("DEBUG img_array.shape:", img_array.shape)
 
     # ----- MULTI-CLASS PREDICTION -----
-    preds = model.predict(img_array)
+    model_instance = get_model()           # <-- use lazy-loaded model
+    preds = model_instance.predict(img_array)
+
     class_index = np.argmax(preds[0])
     confidence = round(np.max(preds[0]) * 100, 2)
 
