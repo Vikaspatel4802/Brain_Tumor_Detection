@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Brain Tumor Detection</title>
+
+    <!-- Google Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: "Poppins", sans-serif;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: radial-gradient(circle at top left, #4f46e5 0, #1f2937 40%, #020617 100%);
+            color: #0f172a;
+        }
+
+        .wrapper {
+            width: 100%;
+            max-width: 1100px;
+            padding: 20px;
+        }
+
+        .container {
+            background: rgba(255, 255, 255, 0.98);
+            border-radius: 18px;
+            padding: 30px 28px;
+            box-shadow: 0 20px 50px rgba(15, 23, 42, 0.35);
+            display: grid;
+            grid-template-columns: 1.1fr 1fr;
+            gap: 28px;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                grid-template-columns: 1fr;
+                padding: 22px 18px;
+            }
+        }
+
+        .left-section {
+            border-right: 1px solid #e5e7eb;
+            padding-right: 22px;
+        }
+
+        @media (max-width: 768px) {
+            .left-section {
+                border-right: none;
+                border-bottom: 1px solid #e5e7eb;
+                padding-right: 0;
+                padding-bottom: 18px;
+                margin-bottom: 14px;
+            }
+        }
+
+        .right-section {
+            padding-left: 10px;
+        }
+
+        .title {
+            font-size: 26px;
+            font-weight: 700;
+            margin: 0 0 6px;
+            color: #0f172a;
+        }
+
+        .subtitle {
+            margin: 0 0 24px;
+            font-size: 13px;
+            color: #6b7280;
+        }
+
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 11px;
+            padding: 5px 10px;
+            border-radius: 999px;
+            background: #eef2ff;
+            color: #4338ca;
+            font-weight: 500;
+            margin-bottom: 10px;
+        }
+
+        .badge-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 999px;
+            background: #22c55e;
+        }
+
+        .upload-box {
+            border: 1.5px dashed #cbd5f5;
+            border-radius: 14px;
+            padding: 18px;
+            text-align: center;
+            background: #f9fafb;
+            transition: all 0.2s ease;
+        }
+
+        .upload-box:hover {
+            border-color: #6366f1;
+            background: #f4f4ff;
+        }
+
+        .upload-icon {
+            font-size: 30px;
+            margin-bottom: 6px;
+            color: #4f46e5;
+        }
+
+        .upload-text-main {
+            font-size: 14px;
+            font-weight: 500;
+            color: #111827;
+        }
+
+        .upload-text-sub {
+            font-size: 11px;
+            color: #6b7280;
+            margin-top: 4px;
+        }
+
+        .file-input {
+            margin-top: 12px;
+        }
+
+        .file-input input[type="file"] {
+            display: inline-block;
+            font-size: 12px;
+            padding: 8px 10px;
+            border-radius: 999px;
+            border: 1px solid #e5e7eb;
+            background: #ffffff;
+            cursor: pointer;
+        }
+
+        .file-input input[type="file"]::-webkit-file-upload-button {
+            border: none;
+            border-radius: 999px;
+            padding: 6px 10px;
+            margin-right: 8px;
+            cursor: pointer;
+            background: #4f46e5;
+            color: white;
+            font-size: 11px;
+            font-weight: 500;
+        }
+
+        button {
+            margin-top: 18px;
+            width: 100%;
+            padding: 10px 16px;
+            border-radius: 999px;
+            border: none;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            background: linear-gradient(135deg, #4f46e5, #6366f1);
+            color: white;
+            box-shadow: 0 10px 25px rgba(79, 70, 229, 0.4);
+            transition: transform 0.15s ease, box-shadow 0.15s ease;
+        }
+
+        button:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 14px 30px rgba(79, 70, 229, 0.55);
+        }
+
+        button:active {
+            transform: translateY(0);
+            box-shadow: 0 7px 20px rgba(79, 70, 229, 0.4);
+        }
+
+        .hint {
+            margin-top: 8px;
+            font-size: 11px;
+            color: #9ca3af;
+        }
+
+        /* Right / Result Section */
+        .panel-header {
+            font-size: 13px;
+            font-weight: 600;
+            color: #6b7280;
+            margin-bottom: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+        }
+
+        .result-card {
+            border-radius: 14px;
+            padding: 16px 16px 14px;
+            background: #f9fafb;
+            border: 1px solid #e5e7eb;
+        }
+
+        .result-label {
+            font-size: 12px;
+            font-weight: 500;
+            color: #6b7280;
+            text-transform: uppercase;
+            letter-spacing: 0.07em;
+            margin-bottom: 4px;
+        }
+
+        .result-value {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .result-value.tumor {
+            color: #b91c1c;
+        }
+
+        .result-value.notumor {
+            color: #15803d;
+        }
+
+        .result-meta {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 10px;
+            margin-top: 12px;
+            font-size: 12px;
+        }
+
+        .meta-item {
+            padding: 10px 10px 9px;
+            border-radius: 10px;
+            background: #ffffff;
+            border: 1px solid #e5e7eb;
+        }
+
+        .meta-label {
+            font-size: 11px;
+            color: #6b7280;
+            margin-bottom: 4px;
+        }
+
+        .meta-value {
+            font-size: 13px;
+            font-weight: 600;
+            color: #111827;
+        }
+
+        .disclaimer {
+            font-size: 10px;
+            color: #9ca3af;
+            margin-top: 10px;
+            line-height: 1.4;
+        }
+
+        .preview-box {
+            margin-top: 14px;
+            border-radius: 12px;
+            overflow: hidden;
+            border: 1px dashed #d1d5db;
+            background: #f3f4f6;
+            text-align: center;
+            padding: 10px;
+            font-size: 11px;
+            color: #6b7280;
+        }
+
+        .preview-box img {
+            max-width: 100%;
+            max-height: 170px;
+            display: block;
+            margin: 0 auto 8px;
+            border-radius: 10px;
+            object-fit: cover;
+        }
+
+        .no-result-text {
+            font-size: 12px;
+            color: #9ca3af;
+        }
+    </style>
+</head>
+<body>
+<div class="wrapper">
+    <div class="container">
+        <!-- LEFT: Upload Section -->
+        <div class="left-section">
+            <div class="badge">
+                <span class="badge-dot"></span>
+                MRI Image Classifier
+            </div>
+            <h1 class="title">Brain Tumor Detection</h1>
+            <p class="subtitle">
+                Upload an MRI scan to get model-based detection for Glioma, Meningioma, Pituitary tumor, or No Tumor.
+            </p>
+
+            <form action="/predict" method="post" enctype="multipart/form-data" id="uploadForm">
+                <div class="upload-box" id="dropZone">
+                    <div class="upload-icon">🧠</div>
+                    <div class="upload-text-main">Drop your MRI image here</div>
+                    <div class="upload-text-sub">Supported formats: JPG, JPEG, PNG</div>
+
+                    <div class="file-input">
+                        <input type="file" name="file" id="fileInput" accept="image/*" required>
+                    </div>
+                </div>
+
+                <button type="submit">Run Detection</button>
+
+                <div class="hint">
+                    This is a deep-learning based classifier. Results are for educational/demo purposes only and not a medical diagnosis.
+                </div>
+
+                <div class="preview-box" id="previewBox" style="display: none;">
+                    <img id="previewImage" alt="MRI Preview">
+                    <div>Preview of selected MRI image</div>
+                </div>
+            </form>
+        </div>
+
+        <!-- RIGHT: Result Section -->
+        <div class="right-section">
+            <div class="panel-header">Scan Result</div>
+
+            {% if prediction %}
+            <div class="result-card">
+                <div class="result-label">Overall Prediction</div>
+                <div class="result-value {{ 'tumor' if prediction != 'No Tumor' else 'notumor' }}">
+                    {% if prediction == 'No Tumor' %}
+                        No Tumor Detected
+                    {% else %}
+                        {{ prediction }} Tumor
+                    {% endif %}
+                </div>
+
+                <div class="result-meta">
+                    <div class="meta-item">
+                        <div class="meta-label">Tumor Name</div>
+                        <div class="meta-value">
+                            {{ tumor_name if tumor_name else 'N/A' }}
+                        </div>
+                    </div>
+                    <div class="meta-item">
+                        <div class="meta-label">Estimated Tumor Size</div>
+                        <div class="meta-value">
+                            {{ tumor_size if tumor_size else 'N/A' }}
+                        </div>
+                    </div>
+                    <div class="meta-item">
+                        <div class="meta-label">Model Confidence</div>
+                        <div class="meta-value">
+                            {{ confidence }}%
+                        </div>
+                    </div>
+                    <div class="meta-item">
+                        <div class="meta-label">Model Type</div>
+                        <div class="meta-value">Multi-class CNN</div>
+                    </div>
+                </div>
+
+                <p class="disclaimer">
+                    This tool is intended for academic and demonstration purposes only.
+                    It does not replace professional medical imaging analysis or diagnosis.
+                </p>
+            </div>
+            {% else %}
+            <div class="result-card">
+                <p class="no-result-text">
+                    No prediction yet. Upload an MRI image on the left and click <strong>Run Detection</strong> to see results here.
+                </p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<script>
+    // Simple image preview
+    const fileInput = document.getElementById('fileInput');
+    const previewBox = document.getElementById('previewBox');
+    const previewImage = document.getElementById('previewImage');
+    const dropZone = document.getElementById('dropZone');
+
+    fileInput.addEventListener('change', function (e) {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = function (evt) {
+            previewImage.src = evt.target.result;
+            previewBox.style.display = 'block';
+        };
+        reader.readAsDataURL(file);
+    });
+
+    // Drag & drop (optional UX)
+    dropZone.addEventListener('dragover', function (e) {
+        e.preventDefault();
+        dropZone.style.borderColor = '#4f46e5';
+        dropZone.style.background = '#eef2ff';
+    });
+
+    dropZone.addEventListener('dragleave', function () {
+        dropZone.style.borderColor = '#cbd5f5';
+        dropZone.style.background = '#f9fafb';
+    });
+
+    dropZone.addEventListener('drop', function (e) {
+        e.preventDefault();
+        dropZone.style.borderColor = '#cbd5f5';
+        dropZone.style.background = '#f9fafb';
+
+        if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+            fileInput.files = e.dataTransfer.files;
+            const event = new Event('change');
+            fileInput.dispatchEvent(event);
+        }
+    });
+</script>
+</body>
+</html>
